@@ -15,19 +15,20 @@ tap.test('plugin registers and processes commands', (t) => {
         }
       });
       await server.start();
+      return server;
     },
-    command(server, done) {
+    command: async(server) => {
       server.registerSlackCommand('/test', {
-        groups(slackPayload, match, groupsDone) {
-          groupsDone(null, 'hello');
+        groups(slackPayload, match) {
+          return 'hello';
         },
-        'group (.*)'(slackPayload, match, groupDone) {
+        'group (.*)'(slackPayload, match) {
           //triggered if I do /pt group test.
-          groupDone(null, 'goodbye');
+          return 'goodbye';
         },
       });
     },
-    query1: async(server) => {
+    query1: async(command, server) => {
       const response = await server.inject({
         method: 'POST',
         url: '/',
@@ -40,7 +41,7 @@ tap.test('plugin registers and processes commands', (t) => {
       t.equal(response.statusCode, 200, '200 when token accepted ');
       t.equal(response.result, 'hello', 'gets info back');
     },
-    query2: async(server) => {
+    query2: async(command, server) => {
       const response2 = await server.inject({
         method: 'POST',
         url: '/',
@@ -53,11 +54,8 @@ tap.test('plugin registers and processes commands', (t) => {
       t.equal(response2.statusCode, 200, '200 when token accepted ');
       t.equal(response2.result, 'goodbye', 'gets info back');
     },
-    cleanup: async(query1, query2, server) => {
-      await server.stop();
-    }
-  }, (err, result) => {
-    t.equal(err, null);
+  }, async (err, result) => {
+    await result.server.stop();
     t.end();
   });
 });
