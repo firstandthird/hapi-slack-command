@@ -19,8 +19,7 @@
   "homepage": "https://github.com/firstandthird/slack-command#readme",
   "dependencies": {
     "boom": "^7.1.1",
-    "hapi": "^17.1.1",
-    "slack-command": "^0.1.0"
+    "hapi": "^17.1.1"
   },
   "devDependencies": {
     "async": "^2.6.0",
