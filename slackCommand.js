@@ -2,7 +2,8 @@ const boom = require('boom');
 
 
 class SlackCommand {
-  constructor(token, options) {
+  constructor(token, options, server) {
+    this.server = server;
     this.options = options;
     this.token = token;
     this.subCommands = {};
@@ -39,14 +40,17 @@ class SlackCommand {
       }
       const isMatched = requestedSubcommand.match(new RegExp(commandToMatch, ['i']));
       if (isMatched !== null) {
-        return await this.subCommands[commandToMatch](request.payload);
+        this.server.log(['hapi-slack-command'], `Matched sub-command ${requestedSubcommand}`);
+        return await this.subCommands[commandToMatch](request.payload, isMatched);
       }
     }
     // if nothing was found to match, try '*', the fallback method:
     if (this.subCommands['*']) {
-      return await this.subCommands['*'](request.payload);
+      this.server.log(['hapi-slack-command'], `No match for sub-command ${requestedSubcommand}, using fallback`);
+      return await this.subCommands['*'](request.payload, '');
     }
     // if nothing was still found return the subCommand descriptions
+    this.server.log(['hapi-slack-command'], `No match for sub-command ${requestedSubcommand} and no fallback specified.`);
     return this.printHelp();
   }
 }

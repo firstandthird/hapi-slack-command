@@ -131,3 +131,20 @@ tap.test('calls fallback if nothing matched the text', async(t) => {
   await server.stop();
   t.end();
 });
+
+tap.test('handler has access to both payload and matched text', async(t) => {
+  server.registerSlackCommand('group (.*)', (slackPayload, match) => match);
+  const response = await server.inject({
+    method: 'POST',
+    url: '/',
+    payload: {
+      token: 'a token',
+      command: '/test',
+      text: 'group hello'
+    }
+  });
+  t.equal(response.statusCode, 200, '200 when token accepted ');
+  t.equal(response.result[0], 'group hello', 'passed matched text to handler');
+  await server.stop();
+  t.end();
+});

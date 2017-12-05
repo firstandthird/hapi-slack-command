@@ -1,14 +1,12 @@
 const SlackCommand = require('./slackCommand');
 
-
 const defaults = {
   routeToListen: '/'
 };
 
-
 const register = async function(server, options) {
   const config = Object.assign({}, defaults, options || {});
-  const slackCommand = new SlackCommand(config.token, config);
+  const slackCommand = new SlackCommand(config.token, config, server);
   server.decorate('server', 'registerSlackCommand', slackCommand.register.bind(slackCommand));
   server.route({
     method: 'POST',
