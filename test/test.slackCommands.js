@@ -32,25 +32,26 @@ tap.test('rejects if token does not match', async (t) => {
   t.end();
 });
 
-tap.test('prints help if there is no matching command', async(t) => {
-  server.registerSlackCommand('/test', (slackPayload) => {
+tap.test('prints help if there is no matching subcommand', async(t) => {
+  server.registerSlackCommand('ls', (slackPayload) => {
     return 'hello';
-  }, 'this is help');
+  }, 'prints a list of your stuff');
   const response = await server.inject({
     method: 'POST',
     url: '/',
     payload: {
       token: 'a token',
-      command: '/and_conquer'
+      command: '/test',
+      text: 'blah'
     }
   });
-  t.equal(response.payload.startsWith('/test: this is help'), true, 'gets help text back ');
+  t.equal(response.payload.startsWith('ls: prints a list of your stuff'), true, 'gets help text back ');
   await server.stop();
   t.end();
 });
 
 tap.test('accepts and processes command registered as a function', async(t) => {
-  server.registerSlackCommand('/test', (slackPayload) => {
+  server.registerSlackCommand('ls', (slackPayload) => {
     return 'hello';
   });
   const response = await server.inject({
@@ -58,7 +59,8 @@ tap.test('accepts and processes command registered as a function', async(t) => {
     url: '/',
     payload: {
       token: 'a token',
-      command: '/test'
+      command: '/test',
+      text: 'ls'
     }
   });
   t.equal(response.statusCode, 200, '200 when token accepted ');
@@ -67,16 +69,9 @@ tap.test('accepts and processes command registered as a function', async(t) => {
   t.end();
 });
 
-tap.test('accepts and matches text for a command registered as an object', async(t) => {
-  server.registerSlackCommand('/test', {
-    groups: (slackPayload, match) => {
-      return 'hello';
-    },
-    'group (.*)': function(slackPayload, match) {
-      //triggered if I do /pt group test.
-      return 'goodbye';
-    },
-  });
+tap.test('accepts and matches text for sub-commands', async(t) => {
+  server.registerSlackCommand('groups', (slackPayload, match) => 'hello');
+  server.registerSlackCommand('group (.*)', (slackPayload, match) => 'goodbye');
   const response = await server.inject({
     method: 'POST',
     url: '/',
@@ -104,11 +99,7 @@ tap.test('accepts and matches text for a command registered as an object', async
 });
 
 tap.test('calls fallback if nothing matched the text', async(t) => {
-  server.registerSlackCommand('/test', {
-    '*': function(slackPayload) {
-      return 'hello';
-    },
-  });
+  server.registerSlackCommand('*', (slackPayload) => 'hello');
   const response = await server.inject({
     method: 'POST',
     url: '/',

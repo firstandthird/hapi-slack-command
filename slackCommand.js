@@ -5,20 +5,20 @@ class SlackCommand {
   constructor(token, options) {
     this.options = options;
     this.token = token;
-    this.commands = {};
+    this.subCommands = {};
     this.commandDescriptions = {};
   }
 
-  register(command, commandHandlers, commandDescription) {
-    this.commands[command] = commandHandlers;
-    if (commandDescription) {
-      this.commandDescriptions[command] = commandDescription;
+  register(subCommand, subCommandHandler, subCommandDescription) {
+    this.subCommands[subCommand] = subCommandHandler;
+    if (subCommandDescription) {
+      this.commandDescriptions[subCommand] = subCommandDescription;
     }
   }
 
   printHelp() {
-    return Object.keys(this.commandDescriptions).reduce((string, command) => {
-      string += `${command}: ${this.commandDescriptions[command]}\n`;
+    return Object.keys(this.commandDescriptions).reduce((string, subCommand) => {
+      string += `${subCommand}: ${this.commandDescriptions[subCommand]}\n`;
       return string;
     }, '');
   }
@@ -28,18 +28,9 @@ class SlackCommand {
     if (request.payload.token !== this.token) {
       throw boom.unauthorized(request);
     }
-    // make sure that command exists:
-    const commandHandler = this.commands[request.payload.command];
-    if (commandHandler === undefined) {
-      return this.printHelp();
-    }
-    // if there's only one command-handling method then run it and return the results:
-    if (typeof commandHandler === 'function') {
-      return await commandHandler(request.payload);
-    }
-    // if that doesn't exist, try to find a command-handler that matches the text:
+    // try to find a subCommand-handler that matches the text:
     const requestedSubcommand = request.payload.text;
-    const subCommands = Object.keys(commandHandler);
+    const subCommands = Object.keys(this.subCommands);
     for (let i = 0; i < subCommands.length; i++) {
       const commandToMatch = subCommands[i];
       // don't try to match '*', it's the fallback:
@@ -48,14 +39,14 @@ class SlackCommand {
       }
       const isMatched = requestedSubcommand.match(new RegExp(commandToMatch, ['i']));
       if (isMatched !== null) {
-        return await commandHandler[commandToMatch](request.payload);
+        return await this.subCommands[commandToMatch](request.payload);
       }
     }
     // if nothing was found to match, try '*', the fallback method:
-    if (commandHandler['*']) {
-      return await commandHandler['*'](request.payload);
+    if (this.subCommands['*']) {
+      return await this.subCommands['*'](request.payload);
     }
-    // if nothing was still found return the command descriptions
+    // if nothing was still found return the subCommand descriptions
     return this.printHelp();
   }
 }

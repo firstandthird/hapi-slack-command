@@ -18,15 +18,8 @@ tap.test('plugin registers and processes commands', (t) => {
       return server;
     },
     command: async(server) => {
-      server.registerSlackCommand('/test', {
-        groups(slackPayload, match) {
-          return 'hello';
-        },
-        'group (.*)'(slackPayload, match) {
-          //triggered if I do /pt group test.
-          return 'goodbye';
-        },
-      });
+      server.registerSlackCommand('groups', (slackPayload, match) => 'hello');
+      server.registerSlackCommand('group (.*)', (slackPayload, match) => 'goodbye');
     },
     query1: async(command, server) => {
       const response = await server.inject({
