@@ -69,6 +69,23 @@ tap.test('accepts and processes command registered as a function', async(t) => {
   t.end();
 });
 
+tap.test('accepts and processes async handlers that return a promise', async(t) => {
+  server.registerSlackCommand('ls', async(slackPayload) => new Promise(async(resolve, reject) => resolve('hello')));
+  const response = await server.inject({
+    method: 'POST',
+    url: '/',
+    payload: {
+      token: 'a token',
+      command: '/test',
+      text: 'ls'
+    }
+  });
+  t.equal(response.statusCode, 200, '200 when token accepted ');
+  t.equal(response.result, 'hello', 'gets info back');
+  await server.stop();
+  t.end();
+});
+
 tap.test('accepts and matches text for sub-commands', async(t) => {
   server.registerSlackCommand('groups', (slackPayload, match) => 'hello');
   server.registerSlackCommand('group (.*)', (slackPayload, match) => 'goodbye');
