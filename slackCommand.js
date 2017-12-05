@@ -6,10 +6,21 @@ class SlackCommand {
     this.options = options;
     this.token = token;
     this.commands = {};
+    this.commandDescriptions = {};
   }
 
-  register(command, commandHandlers) {
+  register(command, commandHandlers, commandDescription) {
     this.commands[command] = commandHandlers;
+    if (commandDescription) {
+      this.commandDescriptions[command] = commandDescription;
+    }
+  }
+
+  printHelp() {
+    return Object.keys(this.commandDescriptions).reduce((string, command) => {
+      string += `${command}: ${this.commandDescriptions[command]}\n`;
+      return string;
+    }, '');
   }
 
   async handler(request, h) {
@@ -20,7 +31,7 @@ class SlackCommand {
     // make sure that command exists:
     const commandHandler = this.commands[request.payload.command];
     if (commandHandler === undefined) {
-      throw boom.methodNotAllowed();
+      return this.printHelp();
     }
     // if there's only one command-handling method then run it and return the results:
     if (typeof commandHandler === 'function') {
@@ -44,8 +55,8 @@ class SlackCommand {
     if (commandHandler['*']) {
       return await commandHandler['*'](request.payload);
     }
-    // if nothing was found and no fallback defined, treat as error:
-    throw boom.methodNotAllowed;
+    // if nothing was still found return the command descriptions
+    return this.printHelp();
   }
 }
 
