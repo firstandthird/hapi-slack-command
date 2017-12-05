@@ -1,6 +1,6 @@
 {
   "name": "hapi-slack-command",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "hapi plugin to use slack command server",
   "scripts": {
     "start": "node index.js",
@@ -18,14 +18,14 @@
   },
   "homepage": "https://github.com/firstandthird/slack-command#readme",
   "dependencies": {
-    "boom": "^7.1.1",
-    "hapi": "^17.1.1"
+    "boom": "^7.1.1"
   },
   "devDependencies": {
     "async": "^2.6.0",
     "eslint": "3.15.0",
     "eslint-config-firstandthird": "3.2.0",
     "eslint-plugin-import": "2.2.0",
+    "hapi": "^17.1.1",
     "tap": "^10.3.0",
     "tap-spec": "^4.1.1"
   },
