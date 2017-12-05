@@ -1,28 +1,24 @@
-'use strict';
+const boom = require('boom');
 
-const defaults = {
-  routeToListen: '/',
-};
 
 class SlackCommand {
   constructor(token, options) {
-    this.options = Object.assign({}, defaults, options || {});
+    this.options = options;
     this.token = token;
     this.commands = {};
   }
 
   register(command, commandHandlers) {
-    this.commands[command] =  commandHandlers;
+    this.commands[command] = commandHandlers;
   }
 
   async handler(request, h) {
-    const slackCommand = this;
     // make sure the token matches:
-    if (request.payload.token !== slackCommand.token) {
+    if (request.payload.token !== this.token) {
       throw boom.unauthorized(request);
     }
     // make sure that command exists:
-    const commandHandler = slackCommand.commands[request.payload.command];
+    const commandHandler = this.commands[request.payload.command];
     if (commandHandler === undefined) {
       throw boom.methodNotAllowed();
     }
