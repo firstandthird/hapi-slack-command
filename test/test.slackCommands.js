@@ -81,40 +81,6 @@ tap.test('accepts and processes command registered as a function', async(t) => {
   t.end();
 });
 
-tap.test('lets you specify an emoji', async(t) => {
-  await server.stop();
-  server = new Hapi.Server({
-    debug: {
-      log: '*'
-    },
-    port: 8080
-  });
-  await server.register({
-    plugin,
-    options: {
-      emoji: ':smile:',
-      routeToListen: '/',
-      token: 'a token'
-    }
-  });
-  await server.start();
-  server.registerSlackCommand('ls', (slackPayload) => {
-    return 'hello';
-  });
-  const response = await server.inject({
-    method: 'POST',
-    url: '/',
-    payload: {
-      token: 'a token',
-      command: '/test',
-      text: 'ls'
-    }
-  });
-  t.equal(response.result, ':smile: hello', 'gets info back');
-  await server.stop();
-  t.end();
-});
-
 tap.test('accepts and processes async handlers that return a promise', async(t) => {
   server.registerSlackCommand('ls', async(slackPayload) => new Promise(async(resolve, reject) => resolve('hello')));
   const response = await server.inject({

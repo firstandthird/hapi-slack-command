@@ -65,9 +65,6 @@ class SlackCommand {
         return boom.badImplementation(error);
       }
       this.server.log(['hapi-slack-command'], `Executing sub-command ${matchedSubCommand}`);
-      if (this.options.emoji) {
-        return `${this.options.emoji} ${commandResult}`;
-      }
       return commandResult;
     }
     return this.printHelp();
