@@ -5,11 +5,17 @@ const Hapi = require('hapi');
 
 let server;
 tap.beforeEach(async() => {
-  server = new Hapi.Server({ port: 8080 });
+  server = new Hapi.Server({
+    debug: {
+      log: '*'
+    },
+    port: 8080
+  });
   await server.register({
     plugin,
     options: {
-      token: 'a token',
+      routeToListen: '/',
+      token: 'a token'
     }
   });
   await server.start();
@@ -147,4 +153,67 @@ tap.test('handler has access to both payload and matched text', async(t) => {
   t.equal(response.result[0], 'group hello', 'passed matched text to handler');
   await server.stop();
   t.end();
+});
+
+tap.test('logs when a subcommand is being processed', async(t) => {
+  server.registerSlackCommand('ls', (slackPayload) => {
+    return 'hello';
+  });
+  server.registerSlackCommand('*', (slackPayload) => {
+    return 'hello';
+  });
+  let called = false;
+  server.events.on('log', async(msg, tags) => {
+    if (!called) {
+      called = true;
+      t.equal(msg.data, 'Executing sub-command ls');
+    }
+  });
+  await server.inject({
+    method: 'POST',
+    url: '/',
+    payload: {
+      token: 'a token',
+      command: '/test',
+      text: 'ls'
+    }
+  });
+  server.events.on('log', async(msg, tags) => {
+    t.equal(msg.data, 'Executing sub-command *');
+  });
+  await server.inject({
+    method: 'POST',
+    url: '/',
+    payload: {
+      token: 'a token',
+      command: '/test',
+      text: 'not specified'
+    }
+  });
+  await server.stop();
+  t.end();
+});
+
+tap.test('logs when a subcommand throws an error', async(t) => {
+  server.registerSlackCommand('ls', (slackPayload) => {
+    throw new Error('this is an error');
+  });
+  server.events.on('log', async(msg, tags) => {
+    t.equal(msg.data.message, 'the sub-command ls had an error');
+    t.equal(msg.data.error.toString(), 'Error: this is an error');
+  });
+  try {
+    await server.inject({
+      method: 'POST',
+      url: '/',
+      payload: {
+        token: 'a token',
+        command: '/test',
+        text: 'ls'
+      }
+    });
+  } catch (e) {
+    await server.stop();
+    t.end();
+  }
 });

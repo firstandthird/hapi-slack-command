@@ -29,28 +29,47 @@ class SlackCommand {
     if (request.payload.token !== this.token) {
       throw boom.unauthorized(request);
     }
-    // try to find a subCommand-handler that matches the text:
+    // first identify the subCommand to execute and any additional text
     const requestedSubcommand = request.payload.text;
     const subCommands = Object.keys(this.subCommands);
+    let matchedSubCommand = false;
+    let matchedData = false;
+    // look through all subCommands for a match:
     for (let i = 0; i < subCommands.length; i++) {
-      const commandToMatch = subCommands[i];
+      const curSubCommand = subCommands[i];
       // don't try to match '*', it's the fallback:
-      if (commandToMatch === '*') {
+      if (curSubCommand === '*') {
         continue;
       }
-      const isMatched = requestedSubcommand.match(new RegExp(commandToMatch, ['i']));
-      if (isMatched !== null) {
-        this.server.log(['hapi-slack-command'], `Matched sub-command ${requestedSubcommand}`);
-        return await this.subCommands[commandToMatch](request.payload, isMatched);
+      matchedData = requestedSubcommand.match(new RegExp(curSubCommand, ['i']));
+      if (matchedData !== null) {
+        matchedSubCommand = curSubCommand;
+        break;
       }
     }
-    // if nothing was found to match, try '*', the fallback method:
-    if (this.subCommands['*']) {
-      this.server.log(['hapi-slack-command'], `No match for sub-command ${requestedSubcommand}, using fallback`);
-      return await this.subCommands['*'](request.payload, '');
+    // if no subCommand matches, use the backup method if available:
+    if (!matchedSubCommand) {
+      if (this.subCommands['*']) {
+        matchedSubCommand = '*';
+        matchedData = '';
+      }
     }
-    // if nothing was still found return the subCommand descriptions
-    this.server.log(['hapi-slack-command'], `No match for sub-command ${requestedSubcommand} and no fallback specified.`);
+    let commandResult = '';
+    // now actually execute the subcommand and return the result:
+    if (matchedSubCommand) {
+      try {
+        commandResult = await this.subCommands[matchedSubCommand](request.payload, matchedData);
+      } catch (error) {
+        const message = `the sub-command ${matchedSubCommand} had an error`;
+        this.server.log(['error', 'hapi-slack-command'], { message, error });
+        return boom.badImplementation(message, { error });
+      }
+      this.server.log(['hapi-slack-command'], `Executing sub-command ${matchedSubCommand}`);
+      if (this.options.emoji) {
+        return `${this.options.emoji} ${commandResult}`;
+      }
+      return commandResult;
+    }
     return this.printHelp();
   }
 }

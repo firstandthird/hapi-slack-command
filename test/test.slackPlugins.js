@@ -11,6 +11,7 @@ tap.test('plugin registers and processes commands', (t) => {
       await server.register({
         plugin,
         options: {
+          routeToListen: '/',
           token: 'a token',
         }
       });

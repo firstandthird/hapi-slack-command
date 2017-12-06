@@ -1,7 +1,7 @@
 const SlackCommand = require('./slackCommand');
 
 const defaults = {
-  routeToListen: '/'
+  routeToListen: '/api/command'
 };
 
 const register = async function(server, options) {
