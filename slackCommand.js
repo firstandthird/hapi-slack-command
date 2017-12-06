@@ -6,15 +6,17 @@ class SlackCommand {
     this.server = server;
     this.options = options;
     this.token = token;
-    this.subCommands = {};
-    this.commandDescriptions = {};
+    this.subCommands = {
+      help: this.printHelp.bind(this)
+    };
+    this.commandDescriptions = {
+      help: 'print this help menu'
+    };
   }
 
   register(subCommand, subCommandHandler, subCommandDescription) {
     this.subCommands[subCommand] = subCommandHandler;
-    if (subCommandDescription) {
-      this.commandDescriptions[subCommand] = subCommandDescription;
-    }
+    this.commandDescriptions[subCommand] = subCommandDescription || '';
   }
 
   printHelp() {
@@ -60,9 +62,7 @@ class SlackCommand {
       try {
         commandResult = await this.subCommands[matchedSubCommand](request.payload, matchedData);
       } catch (error) {
-        const message = `the sub-command ${matchedSubCommand} had an error`;
-        this.server.log(['error', 'hapi-slack-command'], { message, error });
-        return boom.badImplementation(message, { error });
+        return boom.badImplementation(error);
       }
       this.server.log(['hapi-slack-command'], `Executing sub-command ${matchedSubCommand}`);
       if (this.options.emoji) {
