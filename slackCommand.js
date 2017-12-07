@@ -2,14 +2,28 @@ const boom = require('boom');
 
 
 class SlackCommand {
-  constructor(token, options) {
+  constructor(token, options, server) {
+    this.server = server;
     this.options = options;
     this.token = token;
-    this.commands = {};
+    this.subCommands = {
+      help: this.printHelp.bind(this)
+    };
+    this.commandDescriptions = {
+      help: 'print this help menu'
+    };
   }
 
-  register(command, commandHandlers) {
-    this.commands[command] = commandHandlers;
+  register(subCommand, subCommandHandler, subCommandDescription) {
+    this.subCommands[subCommand] = subCommandHandler;
+    this.commandDescriptions[subCommand] = subCommandDescription || '';
+  }
+
+  printHelp() {
+    return Object.keys(this.commandDescriptions).reduce((string, subCommand) => {
+      string += `${subCommand}: ${this.commandDescriptions[subCommand]}\n`;
+      return string;
+    }, '');
   }
 
   async handler(request, h) {
@@ -17,35 +31,43 @@ class SlackCommand {
     if (request.payload.token !== this.token) {
       throw boom.unauthorized(request);
     }
-    // make sure that command exists:
-    const commandHandler = this.commands[request.payload.command];
-    if (commandHandler === undefined) {
-      throw boom.methodNotAllowed();
-    }
-    // if there's only one command-handling method then run it and return the results:
-    if (typeof commandHandler === 'function') {
-      return await commandHandler(request.payload);
-    }
-    // if that doesn't exist, try to find a command-handler that matches the text:
+    // first identify the subCommand to execute and any additional text
     const requestedSubcommand = request.payload.text;
-    const subCommands = Object.keys(commandHandler);
+    const subCommands = Object.keys(this.subCommands);
+    let matchedSubCommand = false;
+    let matchedData = false;
+    // look through all subCommands for a match:
     for (let i = 0; i < subCommands.length; i++) {
-      const commandToMatch = subCommands[i];
+      const curSubCommand = subCommands[i];
       // don't try to match '*', it's the fallback:
-      if (commandToMatch === '*') {
+      if (curSubCommand === '*') {
         continue;
       }
-      const isMatched = requestedSubcommand.match(new RegExp(commandToMatch, ['i']));
-      if (isMatched !== null) {
-        return await commandHandler[commandToMatch](request.payload);
+      matchedData = requestedSubcommand.match(new RegExp(curSubCommand, ['i']));
+      if (matchedData !== null) {
+        matchedSubCommand = curSubCommand;
+        break;
       }
     }
-    // if nothing was found to match, try '*', the fallback method:
-    if (commandHandler['*']) {
-      return await commandHandler['*'](request.payload);
+    // if no subCommand matches, use the backup method if available:
+    if (!matchedSubCommand) {
+      if (this.subCommands['*']) {
+        matchedSubCommand = '*';
+        matchedData = '';
+      }
     }
-    // if nothing was found and no fallback defined, treat as error:
-    throw boom.methodNotAllowed;
+    let commandResult = '';
+    // now actually execute the subcommand and return the result:
+    if (matchedSubCommand) {
+      try {
+        commandResult = await this.subCommands[matchedSubCommand](request.payload, matchedData);
+      } catch (error) {
+        return boom.badImplementation(error);
+      }
+      this.server.log(['hapi-slack-command'], `Executing sub-command ${matchedSubCommand}`);
+      return commandResult;
+    }
+    return this.printHelp();
   }
 }
 
