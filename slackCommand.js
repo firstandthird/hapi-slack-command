@@ -61,11 +61,11 @@ class SlackCommand {
     if (matchedSubCommand) {
       try {
         commandResult = await this.subCommands[matchedSubCommand](request.payload, matchedData);
+        this.server.log(['hapi-slack-command'], `Executing sub-command ${matchedSubCommand}`);
+        return commandResult;
       } catch (error) {
-        return boom.badImplementation(error);
+        return error.toString();
       }
-      this.server.log(['hapi-slack-command'], `Executing sub-command ${matchedSubCommand}`);
-      return commandResult;
     }
     return this.printHelp();
   }
