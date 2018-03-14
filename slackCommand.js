@@ -12,6 +12,7 @@ class SlackCommand {
     this.commandDescriptions = {
       help: 'print this help menu'
     };
+    this.callbacks = {};
   }
 
   register(subCommand, subCommandHandler, subCommandDescription) {
@@ -68,6 +69,21 @@ class SlackCommand {
       }
     }
     return this.printHelp();
+  }
+
+  // callbacks:
+  registerCallback(callbackId, handler) {
+    this.callbacks[callbackId] = handler;
+  }
+
+  async callbackHandler(request, h) {
+    // make sure the token matches:
+    if (request.payload.token !== this.token) {
+      throw boom.unauthorized(request);
+    }
+    const handler = this.callbacks[request.payload.callback_id];
+    const result = await handler(request.payload);
+    return result;
   }
 }
 

@@ -1,17 +1,24 @@
 const SlackCommand = require('./slackCommand');
 
 const defaults = {
-  routeToListen: '/api/command'
+  routeToListen: '/api/command',
+  callbackRoute: '/api/callbacks'
 };
 
-const register = async function(server, options) {
+const register = function(server, options) {
   const config = Object.assign({}, defaults, options || {});
   const slackCommand = new SlackCommand(config.token, config, server);
   server.decorate('server', 'registerSlackCommand', slackCommand.register.bind(slackCommand));
+  server.decorate('server', 'registerSlackCallback', slackCommand.registerCallback.bind(slackCommand));
   server.route({
     method: 'POST',
     path: config.routeToListen,
     handler: slackCommand.handler.bind(slackCommand)
+  });
+  server.route({
+    method: 'POST',
+    path: config.callbackRoute,
+    handler: slackCommand.callbackHandler.bind(slackCommand)
   });
 };
 

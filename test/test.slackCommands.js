@@ -15,6 +15,7 @@ tap.beforeEach(async() => {
     plugin,
     options: {
       routeToListen: '/',
+      callbackRoute: '/callback',
       token: 'a token'
     }
   });
@@ -222,4 +223,18 @@ tap.test('logs when a subcommand throws an error', async(t) => {
     await server.stop();
     t.end();
   }
+});
+
+tap.test('accepts and processes command callbacks', async(t) => {
+  server.registerSlackCommand('menu', (slackPayload) => 'hello');
+  server.registerSlackCallback('callback_1', (slackPayload) => 'hello from the callback');
+  const response = await server.inject({
+    method: 'POST',
+    url: '/callback',
+    payload: require('./sampleCallback.js')
+  });
+  t.equal(response.statusCode, 200, '200 when token accepted ');
+  t.equal(response.result, 'hello from the callback', 'gets info back');
+  await server.stop();
+  t.end();
 });
