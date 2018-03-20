@@ -97,6 +97,7 @@ class SlackCommand {
     const actionValue = action.selected_options[0].value;
 
     const result = await handler(payload, actionName, actionValue);
+    this.server.log(['hapi-slack-command'], `Executing callback ${payload.callback_id}, Action: ${actionName}`);
     return result;
   }
 }

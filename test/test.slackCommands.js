@@ -264,6 +264,14 @@ tap.test('logs when a subcommand throws an error', async(t) => {
 tap.test('accepts and processes command callbacks', async(t) => {
   server.slackCommand.register('menu', (slackPayload) => 'hello');
   server.slackCommand.registerCallback('callback_1', (slackPayload) => 'hello from the callback');
+  let called = false;
+  server.events.on('log', async(msg, tags) => {
+    if (!called) {
+      called = true;
+      t.equal(msg.data, 'Executing callback callback_1, Action: channel_list');
+    }
+  });
+
   const callback = require('./sampleCallback.js');
   const response = await server.inject({
     method: 'POST',
@@ -272,6 +280,7 @@ tap.test('accepts and processes command callbacks', async(t) => {
   });
   t.equal(response.statusCode, 200, '200 when token accepted ');
   t.equal(response.result, 'hello from the callback', 'gets info back');
+  t.equal(called, true, 'logged callback');
   await server.stop();
   t.end();
 });
