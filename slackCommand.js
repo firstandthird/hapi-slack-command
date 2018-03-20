@@ -77,7 +77,8 @@ class SlackCommand {
   }
 
   async callbackHandler(request, h) {
-    const payload = request.payload;
+    const payloadStr = request.payload.payload;
+    const payload = JSON.parse(payloadStr);
     // make sure the token matches:
     if (payload.token !== this.token) {
       throw boom.unauthorized();
