@@ -9,8 +9,8 @@ const register = function(server, options) {
   const config = Object.assign({}, defaults, options || {});
   const slackCommand = new SlackCommand(config.token, config, server);
   server.decorate('server', 'slackCommand', {
-    registerSlackCommand: slackCommand.register.bind(slackCommand),
-    registerSlackCallback: slackCommand.registerCallback.bind(slackCommand)
+    registerCommand: slackCommand.register.bind(slackCommand),
+    registerCallback: slackCommand.registerCallback.bind(slackCommand)
   });
   server.route({
     method: 'POST',
