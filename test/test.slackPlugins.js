@@ -3,7 +3,7 @@ const tap = require('tap');
 const plugin = require('../index.js')
 const Hapi = require('hapi');
 const async = require('async');
-
+const path = require('path');
 tap.test('plugin registers and processes commands', (t) => {
   async.autoInject({
     server: async() => {
@@ -19,8 +19,8 @@ tap.test('plugin registers and processes commands', (t) => {
       return server;
     },
     command: async(server) => {
-      server.registerSlackCommand('groups', (slackPayload, match) => 'hello');
-      server.registerSlackCommand('group (.*)', (slackPayload, match) => 'goodbye');
+      server.slackCommand.register('groups', (slackPayload, match) => 'hello');
+      server.slackCommand.register('group (.*)', (slackPayload, match) => 'goodbye');
     },
     query1: async(command, server) => {
       const response = await server.inject({
@@ -52,4 +52,30 @@ tap.test('plugin registers and processes commands', (t) => {
     await result.server.stop();
     t.end();
   });
+});
+
+tap.test('plugin can load commands from a specified directory', async(t) => {
+  const server = new Hapi.Server({ port: 8080 });
+  await server.register({
+    plugin,
+    options: {
+      commandDir: path.join(__dirname, 'commands'),
+      routeToListen: '/',
+      token: 'a token',
+    }
+  });
+  await server.start();
+  const response = await server.inject({
+    method: 'POST',
+    url: '/',
+    payload: {
+      token: 'a token',
+      command: '/test',
+      text: 'check'
+    }
+  });
+  t.equal(response.statusCode, 200, '200 when token accepted ');
+  t.match(response.result, 'hello', 'gets info back');
+  await server.stop();
+  t.end();
 });
