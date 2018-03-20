@@ -1,4 +1,6 @@
 const SlackCommand = require('./slackCommand');
+const fs = require('fs');
+const path = require('path');
 
 const defaults = {
   routeToListen: '/api/command',
@@ -19,6 +21,16 @@ const register = function(server, options) {
     path: config.callbackRoute,
     handler: slackCommand.callbackHandler.bind(slackCommand)
   });
+  // load any commands if a command directory was specified:
+  const commandDir = config.commandDir;
+  if (commandDir) {
+    if (fs.existsSync(commandDir)) {
+      fs.readdirSync(commandDir).forEach(file => {
+        const command = require(path.join(commandDir, file));
+        server.slackCommand.registerSlackCommand(command.expression, command.handler, command.description);
+      });
+    }
+  }
 };
 
 exports.plugin = {
