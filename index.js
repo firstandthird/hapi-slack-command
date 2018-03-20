@@ -31,6 +31,16 @@ const register = function(server, options) {
       });
     }
   }
+  // load any commands if a command directory was specified:
+  const callbackDir = config.callbackDir;
+  if (callbackDir) {
+    if (fs.existsSync(callbackDir)) {
+      fs.readdirSync(callbackDir).forEach(file => {
+        const callback = require(path.join(callbackDir, file));
+        server.slackCommand.registerCallback(callback.name, callback.handler);
+      });
+    }
+  }
 };
 
 exports.plugin = {
