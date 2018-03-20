@@ -77,12 +77,23 @@ class SlackCommand {
   }
 
   async callbackHandler(request, h) {
+    const payloadStr = request.payload.payload;
+    const payload = JSON.parse(payloadStr);
     // make sure the token matches:
-    if (request.payload.token !== this.token) {
-      throw boom.unauthorized(request);
+    if (payload.token !== this.token) {
+      throw boom.unauthorized();
     }
-    const handler = this.callbacks[request.payload.callback_id];
-    const result = await handler(request.payload);
+    const handler = this.callbacks[payload.callback_id];
+    console.log(payload);
+    console.log(this.callbacks);
+    if (!handler) {
+      return boom.notFound();
+    }
+    const action = payload.actions[0] || {};
+    const actionName = action.name;
+    const actionValue = action.selected_options[0].value;
+
+    const result = await handler(payload, actionName, actionValue);
     return result;
   }
 }
