@@ -84,8 +84,6 @@ class SlackCommand {
       throw boom.unauthorized();
     }
     const handler = this.callbacks[payload.callback_id];
-    console.log(payload);
-    console.log(this.callbacks);
     if (!handler) {
       return boom.notFound();
     }
