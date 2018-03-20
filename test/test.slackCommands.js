@@ -158,6 +158,25 @@ tap.test('handler has access to both payload and matched text', async(t) => {
   t.end();
 });
 
+tap.test('can process a command manually with runCommand', async(t) => {
+  server.slackCommand.register('group (.*)', (slackPayload, match) => ({ slackPayload, match }));
+  server.slackCommand.register('bad', (slackPayload) => {
+    throw new Error('this is an error');
+  });
+  const command = await server.slackCommand.runCommand('group hello');
+  const commandWithPayload = await server.slackCommand.runCommand('group hello', { something: 'value1' });
+  t.equal(command.match[1], 'hello', 'passes matched text to handler');
+  t.equal(commandWithPayload.match[1], 'hello', 'passes matched text to handler');
+  t.equal(commandWithPayload.slackPayload.something, 'value1', 'passes matched text to handler');
+  try {
+    await server.slackCommand.runCommand('bad');
+  } catch (e) {
+    t.isA(e, Error);
+  }
+  await server.stop();
+  t.end();
+});
+
 tap.test('logs when a subcommand is being processed', async(t) => {
   server.slackCommand.register('ls', (slackPayload) => {
     return 'hello';
