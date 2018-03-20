@@ -4,7 +4,6 @@ const plugin = require('../index.js')
 const Hapi = require('hapi');
 const async = require('async');
 const path = require('path');
-
 tap.test('plugin registers and processes commands', (t) => {
   async.autoInject({
     server: async() => {
