@@ -25,27 +25,23 @@ tap.beforeEach(async() => {
 tap.afterEach(async() => {
   await server.stop();
 });
-//
-// tap.test('rejects if token does not match', async (t) => {
-//   const response = await server.inject({
-//     method: 'POST',
-//     url: '/',
-//     payload: {
-//       token: 'is wrong'
-//     }
-//   });
-//   t.equal(response.statusCode, 401, '401 unauthorized status code when token rejected');
-//   await server.stop();
-//   t.end();
-// });
+
+tap.test('rejects if token does not match', async (t) => {
+  const response = await server.inject({
+    method: 'POST',
+    url: '/',
+    payload: {
+      token: 'is wrong'
+    }
+  });
+  t.equal(response.statusCode, 401, '401 unauthorized status code when token rejected');
+  await server.stop();
+  t.end();
+});
 
 tap.test('prints help if there is no matching subcommand', async(t) => {
-  server.registerSlackCommand('ls', (slackPayload) => {
-    return 'hello';
-  }, 'prints a list of your stuff');
-  server.registerSlackCommand('rm', (slackPayload) => {
-    return 'hello';
-  });
+  server.slackCommand.registerSlackCommand('ls', (slackPayload) => 'hello', 'prints a list of your stuff');
+  server.slackCommand.registerSlackCommand('rm', (slackPayload) => 'hello');
 
   const response = await server.inject({
     method: 'POST',
@@ -64,7 +60,7 @@ tap.test('prints help if there is no matching subcommand', async(t) => {
 });
 
 tap.test('accepts and processes command registered as a function', async(t) => {
-  server.registerSlackCommand('ls', (slackPayload) => {
+  server.slackCommand.registerSlackCommand('ls', (slackPayload) => {
     return 'hello';
   });
   const response = await server.inject({
@@ -83,7 +79,7 @@ tap.test('accepts and processes command registered as a function', async(t) => {
 });
 
 tap.test('accepts and processes async handlers that return a promise', async(t) => {
-  server.registerSlackCommand('ls', async(slackPayload) => new Promise(async(resolve, reject) => resolve('hello')));
+  server.slackCommand.registerSlackCommand('ls', async(slackPayload) => new Promise(async(resolve, reject) => resolve('hello')));
   const response = await server.inject({
     method: 'POST',
     url: '/',
@@ -100,8 +96,8 @@ tap.test('accepts and processes async handlers that return a promise', async(t) 
 });
 
 tap.test('accepts and matches text for sub-commands', async(t) => {
-  server.registerSlackCommand('groups', (slackPayload, match) => 'hello');
-  server.registerSlackCommand('group (.*)', (slackPayload, match) => 'goodbye');
+  server.slackCommand.registerSlackCommand('groups', (slackPayload, match) => 'hello');
+  server.slackCommand.registerSlackCommand('group (.*)', (slackPayload, match) => 'goodbye');
   const response = await server.inject({
     method: 'POST',
     url: '/',
@@ -129,7 +125,7 @@ tap.test('accepts and matches text for sub-commands', async(t) => {
 });
 
 tap.test('calls fallback if nothing matched the text', async(t) => {
-  server.registerSlackCommand('*', (slackPayload) => 'hello');
+  server.slackCommand.registerSlackCommand('*', (slackPayload) => 'hello');
   const response = await server.inject({
     method: 'POST',
     url: '/',
@@ -146,7 +142,7 @@ tap.test('calls fallback if nothing matched the text', async(t) => {
 });
 
 tap.test('handler has access to both payload and matched text', async(t) => {
-  server.registerSlackCommand('group (.*)', (slackPayload, match) => match);
+  server.slackCommand.registerSlackCommand('group (.*)', (slackPayload, match) => match);
   const response = await server.inject({
     method: 'POST',
     url: '/',
@@ -163,10 +159,10 @@ tap.test('handler has access to both payload and matched text', async(t) => {
 });
 
 tap.test('logs when a subcommand is being processed', async(t) => {
-  server.registerSlackCommand('ls', (slackPayload) => {
+  server.slackCommand.registerSlackCommand('ls', (slackPayload) => {
     return 'hello';
   });
-  server.registerSlackCommand('*', (slackPayload) => {
+  server.slackCommand.registerSlackCommand('*', (slackPayload) => {
     return 'hello';
   });
   let called = false;
@@ -202,7 +198,7 @@ tap.test('logs when a subcommand is being processed', async(t) => {
 });
 
 tap.test('logs when a subcommand throws an error', async(t) => {
-  server.registerSlackCommand('ls', (slackPayload) => {
+  server.slackCommand.registerSlackCommand('ls', (slackPayload) => {
     throw new Error('this is an error');
   });
   server.events.on('log', async(msg, tags) => {
@@ -226,8 +222,8 @@ tap.test('logs when a subcommand throws an error', async(t) => {
 });
 
 tap.test('accepts and processes command callbacks', async(t) => {
-  server.registerSlackCommand('menu', (slackPayload) => 'hello');
-  server.registerSlackCallback('callback_1', (slackPayload) => 'hello from the callback');
+  server.slackCommand.registerSlackCommand('menu', (slackPayload) => 'hello');
+  server.slackCommand.registerSlackCallback('callback_1', (slackPayload) => 'hello from the callback');
   const response = await server.inject({
     method: 'POST',
     url: '/callback',
