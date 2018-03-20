@@ -16,7 +16,7 @@ class SlackCommand {
   }
 
   register(subCommand, subCommandHandler, subCommandDescription) {
-    this.subCommands[subCommand] = subCommandHandler;
+    this.subCommands[subCommand] = subCommandHandler.bind(this);
     this.commandDescriptions[subCommand] = subCommandDescription || '';
   }
 
@@ -67,7 +67,6 @@ class SlackCommand {
     if (request.payload.token !== this.token) {
       throw boom.unauthorized(request);
     }
-    // first identify the subCommand to execute and any additional text
     const requestedSubcommand = request.payload.text;
     const payload = request.payload;
     try {
