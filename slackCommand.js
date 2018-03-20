@@ -20,20 +20,8 @@ class SlackCommand {
     this.commandDescriptions[subCommand] = subCommandDescription || '';
   }
 
-  printHelp() {
-    return Object.keys(this.commandDescriptions).reduce((string, subCommand) => {
-      string += `${subCommand}: ${this.commandDescriptions[subCommand]}\n`;
-      return string;
-    }, '');
-  }
-
-  async handler(request, h) {
-    // make sure the token matches:
-    if (request.payload.token !== this.token) {
-      throw boom.unauthorized(request);
-    }
-    // first identify the subCommand to execute and any additional text
-    const requestedSubcommand = request.payload.text;
+  // call this inside try/catch as it does not handle errors:
+  async runCommand(command, payload) {
     const subCommands = Object.keys(this.subCommands);
     let matchedSubCommand = false;
     let matchedData = false;
@@ -44,7 +32,7 @@ class SlackCommand {
       if (curSubCommand === '*') {
         continue;
       }
-      matchedData = requestedSubcommand.match(new RegExp(curSubCommand, ['i']));
+      matchedData = command.match(new RegExp(curSubCommand, ['i']));
       if (matchedData !== null) {
         matchedSubCommand = curSubCommand;
         break;
@@ -60,15 +48,33 @@ class SlackCommand {
     let commandResult = '';
     // now actually execute the subcommand and return the result:
     if (matchedSubCommand) {
-      try {
-        commandResult = await this.subCommands[matchedSubCommand](request.payload, matchedData);
-        this.server.log(['hapi-slack-command'], `Executing sub-command ${matchedSubCommand}`);
-        return commandResult;
-      } catch (error) {
-        return error.toString();
-      }
+      commandResult = await this.subCommands[matchedSubCommand](payload, matchedData);
+      this.server.log(['hapi-slack-command'], `Executing sub-command ${matchedSubCommand}`);
+      return commandResult;
     }
     return this.printHelp();
+  }
+
+  printHelp() {
+    return Object.keys(this.commandDescriptions).reduce((string, subCommand) => {
+      string += `${subCommand}: ${this.commandDescriptions[subCommand]}\n`;
+      return string;
+    }, '');
+  }
+
+  async handler(request, h) {
+    // make sure the token matches:
+    if (request.payload.token !== this.token) {
+      throw boom.unauthorized(request);
+    }
+    // first identify the subCommand to execute and any additional text
+    const requestedSubcommand = request.payload.text;
+    const payload = request.payload;
+    try {
+      return this.runCommand(requestedSubcommand, payload);
+    } catch (error) {
+      return error.toString();
+    }
   }
 
   // callbacks:
