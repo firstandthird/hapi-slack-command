@@ -49,7 +49,10 @@ class SlackCommand {
     // now actually execute the subcommand and return the result:
     if (matchedSubCommand) {
       commandResult = await this.subCommands[matchedSubCommand](payload, matchedData);
-      this.server.log(['hapi-slack-command'], `Executing sub-command ${matchedSubCommand}`);
+      this.server.log(['hapi-slack-command', 'command'], {
+        command: matchedSubCommand,
+        text: command
+      });
       return commandResult;
     }
     return this.printHelp();
@@ -78,7 +81,7 @@ class SlackCommand {
 
   // callbacks:
   registerCallback(callbackId, handler) {
-    this.callbacks[callbackId] = handler;
+    this.callbacks[callbackId] = handler.bind(this);
   }
 
   async callbackHandler(request, h) {
@@ -97,7 +100,11 @@ class SlackCommand {
     const actionValue = action.selected_options[0].value;
 
     const result = await handler(payload, actionName, actionValue);
-    this.server.log(['hapi-slack-command'], `Executing callback ${payload.callback_id}, Action: ${actionName}`);
+    this.server.log(['hapi-slack-command', 'callback'], {
+      callback: payload.callback_id,
+      action: actionName,
+      actionValue: actionValue,
+    });
     return result;
   }
 }
