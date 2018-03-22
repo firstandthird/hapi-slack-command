@@ -1,5 +1,5 @@
 const boom = require('boom');
-
+const wreck = require('wreck');
 
 class SlackCommand {
   constructor(token, options, server) {
@@ -106,6 +106,10 @@ class SlackCommand {
       actionValue: actionValue,
     });
     return result;
+  }
+
+  sendMessage(returnUrl, payload) {
+    return wreck.post(returnUrl, { payload });
   }
 }
 
