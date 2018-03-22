@@ -18,7 +18,8 @@
   },
   "homepage": "https://github.com/firstandthird/slack-command#readme",
   "dependencies": {
-    "boom": "^7.1.1"
+    "boom": "^7.1.1",
+    "wreck": "^14.0.2"
   },
   "devDependencies": {
     "async": "^2.6.0",
