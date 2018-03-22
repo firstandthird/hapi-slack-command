@@ -209,7 +209,10 @@ tap.test('logs when a subcommand is being processed', async(t) => {
   server.events.on('log', async(msg, tags) => {
     if (!called) {
       called = true;
-      t.equal(msg.data, 'Executing sub-command ls');
+      t.match(msg.data, {
+        command: 'ls',
+        text: 'ls'
+      });
     }
   });
   await server.inject({
@@ -222,7 +225,10 @@ tap.test('logs when a subcommand is being processed', async(t) => {
     }
   });
   server.events.on('log', async(msg, tags) => {
-    t.equal(msg.data, 'Executing sub-command *');
+    t.match(msg.data, {
+      command: '*',
+      text: 'not specified'
+    });
   });
   await server.inject({
     method: 'POST',
@@ -268,7 +274,11 @@ tap.test('accepts and processes command callbacks', async(t) => {
   server.events.on('log', async(msg, tags) => {
     if (!called) {
       called = true;
-      t.equal(msg.data, 'Executing callback callback_1, Action: channel_list');
+      t.match(msg.data, {
+        callback: 'callback_1',
+        action: 'channel_list',
+        actionValue: 'C24BTKDQW'
+      });
     }
   });
 
@@ -281,6 +291,23 @@ tap.test('accepts and processes command callbacks', async(t) => {
   t.equal(response.statusCode, 200, '200 when token accepted ');
   t.equal(response.result, 'hello from the callback', 'gets info back');
   t.equal(called, true, 'logged callback');
+  await server.stop();
+  t.end();
+});
+
+tap.test('sendMessage will post a payload to a return URL', async(t) => {
+  server.route({
+    method: 'post',
+    path: '/sendMessage',
+    handler(request, h) {
+      return request.payload.value1;
+    }
+  })
+  const result = await server.slackCommand.sendMessage('http://localhost:8080/sendMessage', {
+    value1: 'a value'
+  });
+  t.equal(result.res.statusCode, 200, 'can post to the return URL');
+  t.equal(result.payload.toString(), 'a value', 'can get info back from return URL');
   await server.stop();
   t.end();
 });
