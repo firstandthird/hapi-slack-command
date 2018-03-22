@@ -209,7 +209,10 @@ tap.test('logs when a subcommand is being processed', async(t) => {
   server.events.on('log', async(msg, tags) => {
     if (!called) {
       called = true;
-      t.equal(msg.data, 'Executing sub-command ls');
+      t.match(msg.data, {
+        command: 'ls',
+        text: 'ls'
+      });
     }
   });
   await server.inject({
@@ -222,7 +225,10 @@ tap.test('logs when a subcommand is being processed', async(t) => {
     }
   });
   server.events.on('log', async(msg, tags) => {
-    t.equal(msg.data, 'Executing sub-command *');
+    t.match(msg.data, {
+      command: '*',
+      text: 'not specified'
+    });
   });
   await server.inject({
     method: 'POST',
@@ -268,7 +274,11 @@ tap.test('accepts and processes command callbacks', async(t) => {
   server.events.on('log', async(msg, tags) => {
     if (!called) {
       called = true;
-      t.equal(msg.data, 'Executing callback callback_1, Action: channel_list');
+      t.match(msg.data, {
+        callback: 'callback_1',
+        action: 'channel_list',
+        actionValue: 'C24BTKDQW'
+      });
     }
   });
 
