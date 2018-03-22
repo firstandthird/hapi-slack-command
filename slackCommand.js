@@ -1,5 +1,5 @@
 const boom = require('boom');
-
+const wreck = require('wreck');
 
 class SlackCommand {
   constructor(token, options, server) {
@@ -20,7 +20,6 @@ class SlackCommand {
     this.commandDescriptions[subCommand] = subCommandDescription || '';
   }
 
-  // call this inside try/catch as it does not handle errors:
   async runCommand(command, payload) {
     const subCommands = Object.keys(this.subCommands);
     let matchedSubCommand = false;
@@ -48,7 +47,11 @@ class SlackCommand {
     let commandResult = '';
     // now actually execute the subcommand and return the result:
     if (matchedSubCommand) {
-      commandResult = await this.subCommands[matchedSubCommand](payload, matchedData);
+      try {
+        commandResult = await this.subCommands[matchedSubCommand](payload, matchedData);
+      } catch (error) {
+        return error;
+      }
       this.server.log(['hapi-slack-command', 'command'], {
         command: matchedSubCommand,
         text: command
@@ -72,11 +75,14 @@ class SlackCommand {
     }
     const requestedSubcommand = request.payload.text;
     const payload = request.payload;
-    try {
-      return this.runCommand(requestedSubcommand, payload);
-    } catch (error) {
-      return error.toString();
+    const result = this.runCommand(requestedSubcommand, payload);
+    if (result instanceof Error) {
+      console.log('+');
+      console.log('+');
+      console.log('+');
+      return result.toString();
     }
+    return result;
   }
 
   // callbacks:
@@ -100,12 +106,19 @@ class SlackCommand {
     const actionValue = action.selected_options[0].value;
 
     const result = await handler(payload, actionName, actionValue);
+    if (result instanceof Error) {
+      console.log('---');
+    }
     this.server.log(['hapi-slack-command', 'callback'], {
       callback: payload.callback_id,
       action: actionName,
       actionValue: actionValue,
     });
     return result;
+  }
+
+  sendMessage(returnUrl, payload) {
+    return wreck.post(returnUrl, { payload });
   }
 }
 

@@ -294,3 +294,18 @@ tap.test('accepts and processes command callbacks', async(t) => {
   await server.stop();
   t.end();
 });
+
+tap.test('sendMessage will send a payload to a specific URL', async(t) => {
+  server.route({
+    method: 'post',
+    path: '/messageTest',
+    handler(request, h) {
+      return request.payload.value1;
+    }
+  });
+  const result = await server.slackCommand.sendMessage('http://localhost:8080/messageTest', { value1: 'a value' });
+  t.equal(result.res.statusCode, 200);
+  t.equal(result.payload.toString(), 'a value');
+  await server.stop();
+  t.end();
+});
