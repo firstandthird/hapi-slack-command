@@ -23,15 +23,20 @@ const register = function(server, options) {
   });
   // load any commands if a command directory was specified:
   const commandDir = config.commandDir;
+  const commands = [];
   if (commandDir) {
     if (fs.existsSync(commandDir)) {
       fs.readdirSync(commandDir).forEach(file => {
-        const command = require(path.join(commandDir, file));
-        server.slackCommand.register(command.expression, command.handler, command.description);
+        commands.push(require(path.join(commandDir, file)));
       });
     }
   }
-  // load any commands if a command directory was specified:
+  // sort commands by priority then register them:
+  commands
+    .sort((a, b) => a.priority > b.priority)
+    .forEach(command => server.slackCommand.register(command.expression, command.handler, command.description));
+
+  // load any callbacks if a callback directory was specified:
   const callbackDir = config.callbackDir;
   if (callbackDir) {
     if (fs.existsSync(callbackDir)) {

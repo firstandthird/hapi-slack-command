@@ -1,4 +1,5 @@
 module.exports = {
   expression: 'check',
-  handler: slackPayload => 'hello'
+  handler: slackPayload => 'hello',
+  priority: 0
 };

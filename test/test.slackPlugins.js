@@ -54,7 +54,7 @@ tap.test('plugin registers and processes commands', (t) => {
   });
 });
 
-tap.test('plugin can load commands from a specified directory', async(t) => {
+tap.test('plugin can load commands from a specified directory in "priority" order', async(t) => {
   const server = new Hapi.Server({ port: 8080 });
   await server.register({
     plugin,
@@ -75,7 +75,32 @@ tap.test('plugin can load commands from a specified directory', async(t) => {
     }
   });
   t.equal(response.statusCode, 200, '200 when token accepted ');
-  t.match(response.result, 'hello', 'gets info back');
+  t.match(response.result, 'hello', 'gets info back from check');
+
+  const response2 = await server.inject({
+    method: 'POST',
+    url: '/',
+    payload: {
+      token: 'a token',
+      command: '/test',
+      text: 'check test'
+    }
+  });
+  t.equal(response2.statusCode, 200, '200 when token accepted ');
+  t.match(response2.result, 'hello', 'still gets info back from check');
+
+  const response3 = await server.inject({
+    method: 'POST',
+    url: '/',
+    payload: {
+      token: 'a token',
+      command: '/test',
+      text: 'aheck'
+    }
+  });
+  t.equal(response3.statusCode, 200, '200 when token accepted ');
+  t.match(response3.result, 'aello', 'will be the last command matched');
+
   await server.stop();
   t.end();
 });
