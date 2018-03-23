@@ -48,12 +48,16 @@ class SlackCommand {
     let commandResult = '';
     // now actually execute the subcommand and return the result:
     if (matchedSubCommand) {
-      commandResult = await this.subCommands[matchedSubCommand](payload, matchedData);
-      this.server.log(['hapi-slack-command', 'command'], {
-        command: matchedSubCommand,
-        text: command
-      });
-      return commandResult;
+      try {
+        commandResult = await this.subCommands[matchedSubCommand](payload, matchedData);
+        this.server.log(['hapi-slack-command', 'command'], {
+          command: matchedSubCommand,
+          text: command
+        });
+        return commandResult;
+      } catch (e) {
+        return e;
+      }
     }
     return this.printHelp();
   }
@@ -65,18 +69,14 @@ class SlackCommand {
     }, '');
   }
 
-  async handler(request, h) {
+  handler(request, h) {
     // make sure the token matches:
     if (request.payload.token !== this.token) {
       throw boom.unauthorized(request);
     }
     const requestedSubcommand = request.payload.text;
     const payload = request.payload;
-    try {
-      return this.runCommand(requestedSubcommand, payload);
-    } catch (error) {
-      return error.toString();
-    }
+    return this.runCommand(requestedSubcommand, payload);
   }
 
   // callbacks:
@@ -99,13 +99,17 @@ class SlackCommand {
     const actionName = action.name;
     const actionValue = action.selected_options[0].value;
 
-    const result = await handler(payload, actionName, actionValue);
-    this.server.log(['hapi-slack-command', 'callback'], {
-      callback: payload.callback_id,
-      action: actionName,
-      actionValue: actionValue,
-    });
-    return result;
+    try {
+      const result = await handler(payload, actionName, actionValue);
+      this.server.log(['hapi-slack-command', 'callback'], {
+        callback: payload.callback_id,
+        action: actionName,
+        actionValue,
+      });
+      return result;
+    } catch (e) {
+      return e;
+    }
   }
 
   sendMessage(returnUrl, payload) {
